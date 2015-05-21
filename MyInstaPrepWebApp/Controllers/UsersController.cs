@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Entity;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using MyInstaPrepWebApp.Models;
@@ -12,30 +13,27 @@ namespace MyInstaPrepWebApp.Controllers
 {
     public class UsersController : Controller
     {
-        private ApplicationDbContext db = new ApplicationDbContext();
         private MyInstaPrepAPI api = new MyInstaPrepAPI(new Uri("http://microsoft-apiapp613d756d6fa04ea0b13863e95e4fd34f.azurewebsites.net"));
 
         // GET: Users
         public ActionResult Index()
         {
-            var a = api.Users.GetUsers();
-            return View(a);
+            return View(api.Users.GetUsers());
         }
 
         // GET: Users/Details/5
         public ActionResult Details(int? id)
         {
-            //if (id == null)
-            //{
-            //    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            //}
-            //User user = db.Users.Find(id);
-            //if (user == null)
-            //{
-            //    return HttpNotFound();
-            //}
-            //return View(user);
-            return null;
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            User user = api.Users.GetUser((int)id);
+            if (user == null)
+            {
+                return HttpNotFound();
+            }
+            return View(user);
         }
 
         // GET: Users/Create
@@ -51,31 +49,29 @@ namespace MyInstaPrepWebApp.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "Id,Email,FirstName,LastName")] User user)
         {
-            //if (ModelState.IsValid)
-            //{
-            //    db.Users.Add(user);
-            //    db.SaveChanges();
-            //    return RedirectToAction("Index");
-            //}
+            if (ModelState.IsValid)
+            {
+                api.Users.PostUser(user);
+                //db.SaveChanges();
+                return RedirectToAction("Index");
+            }
 
-            //return View(user);
-            return null;
+            return View(user);
         }
 
         // GET: Users/Edit/5
         public ActionResult Edit(int? id)
         {
-            //if (id == null)
-            //{
-            //    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            //}
-            //User user = db.Users.Find(id);
-            //if (user == null)
-            //{
-            //    return HttpNotFound();
-            //}
-            //return View(user);
-            return null;
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            User user = api.Users.GetUser((int)id);
+            if (user == null)
+            {
+                return HttpNotFound();
+            }
+            return View(user);
         }
 
         // POST: Users/Edit/5
@@ -85,29 +81,32 @@ namespace MyInstaPrepWebApp.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "Id,Email,FirstName,LastName")] User user)
         {
-            if (ModelState.IsValid)
+            try
             {
-                db.Entry(user).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
-            }
-            return View(user);
+                if (ModelState.IsValid)
+                {
+                    if (user.Id == null)
+                        return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                    api.Users.PutUser((int) user.Id, user);
+                }
+            } catch (Microsoft.Rest.HttpOperationException e) { }
+
+            return RedirectToAction("Index");
         }
 
         // GET: Users/Delete/5
         public ActionResult Delete(int? id)
         {
-            //if (id == null)
-            //{
-            //    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            //}
-            //User user = db.Users.Find(id);
-            //if (user == null)
-            //{
-            //    return HttpNotFound();
-            //}
-            //return View(user);
-            return null;
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            User user = api.Users.GetUser((int)id);
+            if (user == null)
+            {
+                return HttpNotFound();
+            }
+            return View(user);
         }
 
         // POST: Users/Delete/5
@@ -115,20 +114,8 @@ namespace MyInstaPrepWebApp.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            //User user = db.Users.Find(id);
-            //db.Users.Remove(user);
-            //db.SaveChanges();
-            //return RedirectToAction("Index");
-            return null;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
+            api.Users.DeleteUser(id);
+            return RedirectToAction("Index");
         }
     }
 }
